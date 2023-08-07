@@ -14,11 +14,13 @@ from dbt.adapters.base import Credentials
 from dbt.adapters.sql import SQLConnectionManager
 from dbt.contracts.connection import AdapterResponse
 from dbt.events import AdapterLogger
-from dbt.exceptions import DbtDatabaseError, DbtRuntimeError, FailedToConnectError
+from dbt.exceptions import (DbtDatabaseError, DbtRuntimeError,
+                            FailedToConnectError)
 from dbt.helper_types import Port
 from trino.transaction import IsolationLevel
 
 from dbt.adapters.trino.__version__ import version
+from dbt.adapters.trino.authx import OAuth2ClientCredentialAuthentication
 
 logger = AdapterLogger("Trino")
 PREPARED_STATEMENTS_ENABLED_DEFAULT = True
@@ -44,6 +46,8 @@ class TrinoCredentialsFactory:
                 return TrinoJwtCredentials
             elif method == "oauth":
                 return TrinoOauthCredentials
+            elif method == "oauth_client_credentials":
+                return TrinoOauthClientCredentials
         return TrinoNoneCredentials
 
     @classmethod
@@ -271,6 +275,37 @@ class TrinoOauthCredentials(TrinoCredentials):
 
     def trino_auth(self):
         return self.OAUTH
+
+
+@dataclass
+class TrinoOauthClientCredentials(TrinoCredentials):
+    host: str
+    port: Port
+    client_id: str
+    client_secret: str
+    token_endpoint: str
+    user: Optional[str] = None
+    client_tags: Optional[List[str]] = None
+    roles: Optional[Dict[str, str]] = None
+    cert: Optional[str] = None
+    http_headers: Optional[Dict[str, str]] = None
+    session_properties: Dict[str, Any] = field(default_factory=dict)
+    prepared_statements_enabled: bool = PREPARED_STATEMENTS_ENABLED_DEFAULT
+    retries: Optional[int] = trino.constants.DEFAULT_MAX_ATTEMPTS
+    timezone: Optional[str] = None
+
+    @property
+    def http_scheme(self):
+        return HttpScheme.HTTPS
+
+    @property
+    def method(self):
+        return "oauth_client_credentials"
+
+    def trino_auth(self):
+        return OAuth2ClientCredentialAuthentication(
+            self.client_id, self.client_secret, self.token_endpoint
+        )
 
 
 class ConnectionWrapper(object):

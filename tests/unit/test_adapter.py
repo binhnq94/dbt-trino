@@ -19,6 +19,7 @@ from dbt.adapters.trino.connections import (
     TrinoLdapCredentials,
     TrinoNoneCredentials,
     TrinoOauthCredentials,
+    TrinoOauthClientCredentials,
 )
 
 from .utils import config_from_parts_or_dicts, mock_connection
@@ -396,6 +397,39 @@ class TestTrinoAdapterAuthenticationMethods(unittest.TestCase):
         self.assertEqual(connection.credentials.prepared_statements_enabled, True)
         self.assertEqual(credentials.client_tags, ["dev", "oauth"])
         self.assertEqual(credentials.timezone, "UTC")
+
+
+    def test_oauth_client_credentials_authentication(self):
+        connection = self.acquire_connection_with_profile(
+            {
+                "type": "trino",
+                "catalog": "trinodb",
+                "host": "database",
+                "port": 5439,
+                "method": "oauth_client_credentials",
+                "schema": "dbt_test_schema",
+                "client_id": "my_id",
+                "client_secret": "my_secret",
+                "token_endpoint": "https://localhost:8080",
+                "cert": "/path/to/cert",
+                "client_tags": ["dev", "oauth"],
+                "http_headers": {"X-Trino-Client-Info": "dbt-trino"},
+                "session_properties": {
+                    "query_max_run_time": "4h",
+                    "exchange_compression": True,
+                },
+            }
+        )
+        credentials = connection.credentials
+        self.assertIsInstance(credentials, TrinoOauthClientCredentials)
+        self.assert_default_connection_credentials(credentials)
+        self.assertEqual(credentials.http_scheme, HttpScheme.HTTPS)
+        self.assertEqual(credentials.cert, "/path/to/cert")
+        self.assertEqual(connection.credentials.prepared_statements_enabled, True)
+        self.assertEqual(credentials.client_tags, ["dev", "oauth"])
+        self.assertEqual(credentials.client_id, "my_id")
+        self.assertEqual(credentials.client_secret, "my_secret")
+        self.assertEqual(credentials.token_endpoint, "https://localhost:8080")
 
 
 class TestPreparedStatementsEnabled(TestCase):

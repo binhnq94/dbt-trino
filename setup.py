@@ -87,6 +87,7 @@ setup(
     install_requires=[
         "dbt-core~={}".format(dbt_version),
         "trino~=0.326",
+        "Authlib==1.2.0",
     ],
     zip_safe=False,
     classifiers=[
