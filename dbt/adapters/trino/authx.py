@@ -16,7 +16,7 @@ class OAuth2ClientCredentialAuthentication(Authentication):
         self.client = OAuth2Session(
             client_id=client_id,
             client_secret=client_secret,
-            token_endpoint=token_endpoint,
+            token_endpoint_auth_method=token_endpoint,
             **kwargs,
         )
 
