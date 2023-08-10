@@ -12,11 +12,13 @@ class OAuth2ClientCredentialAuthentication(Authentication):
     * :class:`authlib.oauth2.client.OAuth2Client`
     """
 
-    def __init__(self, client_id: str, client_secret: str, token_endpoint: str, **kwargs) -> None:
+    def __init__(
+        self, client_id: str, client_secret: str, token_endpoint: str, **kwargs
+    ) -> None:
         self.client = OAuth2Session(
             client_id=client_id,
             client_secret=client_secret,
-            token_endpoint_auth_method=token_endpoint,
+            token_endpoint=token_endpoint,
             **kwargs,
         )
 
@@ -28,4 +30,6 @@ class OAuth2ClientCredentialAuthentication(Authentication):
     def fetch_token(self):
         token: OAuth2Token = self.client.token
         if not token or token.is_expired() is True:
-            self.client.token = self.client.fetch_access_token(grant_type="client_credentials")
+            self.client.token = self.client.fetch_access_token(
+                grant_type="client_credentials"
+            )
